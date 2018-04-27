@@ -5,6 +5,8 @@ import (
 	"net"
 	"sync"
 
+	"bufio"
+
 	"github.com/disq/msghub"
 )
 
@@ -17,7 +19,7 @@ type Server struct {
 	listener net.Listener
 	wg       sync.WaitGroup
 
-	sess   []*Session
+	sess   map[uint64]*Session
 	sessMu sync.RWMutex
 
 	lastSessionId uint64
@@ -25,8 +27,15 @@ type Server struct {
 
 // Session stores each sessions own data
 type Session struct {
-	ID   uint64
+	ID      uint64
+	WriteCh chan string
+
+	ctx context.Context // Overkill?
+
 	conn net.Conn
+
+	reader *bufio.Reader
+	writer *bufio.Writer
 }
 
 // NewServer creates a new Server instance
@@ -38,6 +47,8 @@ func NewServer(ctx context.Context, logger msghub.Logger) *Server {
 		ctx:    ctx,
 		cancel: cancel,
 		logger: logger,
+
+		sess: make(map[uint64]*Session),
 	}
 }
 
@@ -60,7 +71,7 @@ func (s *Server) Listen(listenAddr string) error {
 		}
 
 		// Never block
-		go s.handleConn(conn)
+		go s.handleConn(conn) // FIXME(kh): Worker pool?
 	}
 
 	return nil
