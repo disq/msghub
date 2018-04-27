@@ -1,11 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"net"
 	"sync"
-
-	"bufio"
 
 	"github.com/disq/msghub"
 )
@@ -30,7 +29,8 @@ type Session struct {
 	ID      uint64
 	WriteCh chan string
 
-	ctx context.Context // Overkill?
+	ctx    context.Context // Overkill?
+	cancel context.CancelFunc
 
 	conn net.Conn
 
@@ -81,6 +81,14 @@ func (s *Server) Close() {
 	if s.listener != nil {
 		s.listener.Close() // error ignored
 	}
+
+	// Disconnect all clients
+	s.sessMu.RLock()
+	for _, c := range s.sess {
+		c.WriteCh <- "Server shutting down...\n" // FIXME does not work
+		c.cancel()
+	}
+	s.sessMu.RUnlock()
 
 	s.cancel()
 	s.wg.Wait()

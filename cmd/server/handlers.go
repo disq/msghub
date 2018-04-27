@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 	"sync/atomic"
 )
@@ -27,12 +28,14 @@ func (s *Server) handleConn(conn net.Conn) {
 		ID:      id,
 		WriteCh: make(chan string, chanBufferSize),
 
-		conn: conn,
-		ctx:  ctx,
+		conn:   conn,
+		ctx:    ctx,
+		cancel: cancel,
 
 		reader: bufio.NewReader(conn),
 		writer: bufio.NewWriter(conn),
 	}
+	defer close(c.WriteCh)
 
 	s.sessMu.Lock()
 	s.sess[id] = c
@@ -104,12 +107,52 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 	lnParts := strings.SplitN(ln, " ", 3)
 
 	switch lnParts[0] {
+
+	// Allow newlines
+	case "":
+		return nil
+
+	// Ask for id
 	case "a":
 		c.WriteCh <- fmt.Sprintf("%v\n", c.ID)
 		return nil
 
-		// TODO(kh) handle more commands
+	// Ask for clients
+	case "w":
+		list := s.GetConnectedSessions()
+		var flist []string
+		for _, sessionId := range list {
+			if sessionId == c.ID {
+				continue
+			}
+			flist = append(flist, strconv.FormatUint(sessionId, 10))
+		}
+		c.WriteCh <- fmt.Sprintf("%v\n", strings.Join(flist, " "))
+		return nil
+
+	// Broadcast message
+	case "s":
+		// TODO(kh)
+		return nil
+
+	// Disconnect
+	case "d":
+		c.WriteCh <- "Disconnecting...\n"
+		c.cancel()
+		return nil
 	}
 
 	return fmt.Errorf("Unhandled command")
+}
+
+func (s *Server) GetConnectedSessions() []uint64 {
+	var ret []uint64
+
+	s.sessMu.RLock()
+	for k := range s.sess {
+		ret = append(ret, k)
+	}
+	s.sessMu.RUnlock()
+
+	return ret
 }
