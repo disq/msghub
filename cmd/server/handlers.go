@@ -22,7 +22,8 @@ func (s *Server) handleConn(conn net.Conn) {
 
 	s.logger.Printf("[%v] connected (%v)", id, conn.RemoteAddr().String())
 
-	ctx, cancel := context.WithCancel(s.ctx)
+	// Separate context because we want to send shutdown message to clients on shutdown
+	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &Session{
 		ID:      id,
@@ -52,7 +53,11 @@ func (s *Server) handleConn(conn net.Conn) {
 	<-c.ctx.Done()
 
 	// Disconnected, cleanup
-	s.logger.Printf("[%v] disconnected", id)
+	if s.ctx.Err() != nil {
+		s.logger.Printf("[%v] disconnected (shutting down)", id)
+	} else {
+		s.logger.Printf("[%v] disconnected", id)
+	}
 
 	s.sessMu.Lock()
 	delete(s.sess, id)
@@ -64,17 +69,9 @@ func (s *Server) handleConn(conn net.Conn) {
 
 // ListenWriter listens on the client's write channel and forwards messages to client
 func (s *Server) ListenWriter(c *Session) {
-	for {
-		select {
-		case <-c.ctx.Done():
-			return
-		case w, ok := <-c.WriteCh:
-			if !ok {
-				return // closed
-			}
-			c.writer.WriteString((*w).Read() + "\n")
-			c.writer.Flush()
-		}
+	for w := range c.WriteCh {
+		c.writer.WriteString((*w).Read() + "\n")
+		c.writer.Flush()
 	}
 }
 

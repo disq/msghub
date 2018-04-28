@@ -64,6 +64,11 @@ func (s *Server) Listen(listenAddr string) error {
 
 	s.logger.Printf("Listening on %v", listenAddr)
 
+	go func() {
+		<-s.ctx.Done()
+		s.close()
+	}()
+
 	// Accept connections
 	for {
 		conn, err := s.listener.Accept()
@@ -78,15 +83,13 @@ func (s *Server) Listen(listenAddr string) error {
 	return nil
 }
 
-func (s *Server) Close() {
-	if s.listener != nil {
-		s.listener.Close() // error ignored
-	}
+func (s *Server) close() {
+	s.listener.Close()
 
 	// Disconnect all clients
 	s.sessMu.RLock()
 	for _, c := range s.sess {
-		c.Send(SystemMessage{"Server shutting down..."}) // FIXME does not work
+		c.Send(SystemMessage{"Server shutting down..."})
 	}
 	s.sessMu.RUnlock()
 

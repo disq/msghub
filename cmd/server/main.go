@@ -17,29 +17,21 @@ func main() {
 	flag.Parse()
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+
+	logger := log.New(os.Stderr, "", log.LstdFlags|log.LUTC)
+	s := NewServer(ctx, logger)
+
 	go func() {
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt, syscall.SIGTERM, syscall.SIGPIPE)
 		<-ch
-		log.Print("Got signal, cleaning up...")
+		logger.Print("Got signal, cleaning up...")
 		cancelFunc()
-	}()
-
-	logger := log.New(os.Stderr, "", log.LstdFlags|log.LUTC)
-
-	s := NewServer(ctx, logger)
-
-	go func() {
-		// Shut down server on interrupt
-		<-s.ctx.Done()
-		s.Close()
 	}()
 
 	err := s.Listen(*addr)
 	if err != nil && err != context.Canceled && !isErrNetClosing(err) {
 		log.Print(err)
 	}
-
-	// Make sure goroutines are down
-	s.Close()
 }
