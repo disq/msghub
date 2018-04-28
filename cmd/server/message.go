@@ -18,18 +18,22 @@ type CommandMessage struct {
 	contents string
 }
 
+// Message is the interface for messages
 type Message interface {
 	Read() string
 }
 
+// Read implements the Message interface for ClientMessage
 func (m ClientMessage) Read() string {
 	return fmt.Sprintf("Message from %v: %v", m.from, m.contents)
 }
 
+// Read implements the Message interface for SystemMessage
 func (m SystemMessage) Read() string {
 	return fmt.Sprintf("System message: %v", m.contents)
 }
 
+// Read implements the Message interface for CommandMessage
 func (m CommandMessage) Read() string {
 	return fmt.Sprintf("%v", m.contents)
 }

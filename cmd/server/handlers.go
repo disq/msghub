@@ -79,6 +79,7 @@ func (s *Server) ListenWriter(c *Session) {
 	}
 }
 
+// ListenReader listens the bufio.reader of client session c, and evaluates input
 func (s *Server) ListenReader(c *Session) {
 	for {
 		select {
@@ -110,6 +111,7 @@ func (s *Server) ListenReader(c *Session) {
 	}
 }
 
+// ParseHandleCommand evaluates a single command input line originating from session and handles the command
 func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 	ln = strings.TrimSpace(ln)
 	lnParts := strings.SplitN(ln, " ", 3)
@@ -186,6 +188,7 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 	return fmt.Errorf("Unhandled command")
 }
 
+// GetConnectedSessions returns session ids of currently connected clients
 func (s *Server) GetConnectedSessions() []uint64 {
 	var ret []uint64
 
@@ -198,6 +201,7 @@ func (s *Server) GetConnectedSessions() []uint64 {
 	return ret
 }
 
+// SendHelp shows a help message (which doubles as a welcome message) to client
 func (s *Server) SendHelp(c *Session) {
 	c.Send(CommandMessage{`
 Welcome! Commands:
@@ -210,6 +214,7 @@ d  disconnect
 `})
 }
 
+// Send sends a Message to client
 func (c *Session) Send(msg Message) error {
 	select {
 	case <-c.ctx.Done():
@@ -220,6 +225,7 @@ func (c *Session) Send(msg Message) error {
 	return nil
 }
 
+// SendToSession sends message to the session with the given id
 func (s *Server) SendToSession(id uint64, msg Message) error {
 	s.sessMu.RLock()
 	dst, ok := s.sess[id]

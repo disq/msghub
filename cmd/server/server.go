@@ -79,8 +79,6 @@ func (s *Server) Listen(listenAddr string) error {
 		// Never block
 		go s.handleConn(conn) // FIXME(kh): Worker pool?
 	}
-
-	return nil
 }
 
 func (s *Server) close() {
