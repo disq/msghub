@@ -125,6 +125,10 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 
 	// Broadcast message
 	case "s":
+		if len(lnParts) != 3 {
+			return fmt.Errorf("Invalid parameters")
+		}
+
 		// Parse
 		dstList, err := s.ValidateBroadcastDestinations(c, lnParts[1])
 		if err != nil {
