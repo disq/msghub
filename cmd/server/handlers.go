@@ -135,7 +135,11 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 			}
 			flist = append(flist, strconv.FormatUint(sessionId, 10))
 		}
-		c.Send(CommandMessage{fmt.Sprintf("%v", strings.Join(flist, " "))})
+		if len(flist) == 0 {
+			c.Send(CommandMessage{"No other clients seem to have connected."})
+		} else {
+			c.Send(CommandMessage{fmt.Sprintf("List of clients: %v", strings.Join(flist, ","))})
+		}
 		return nil
 
 	// Broadcast message
@@ -160,7 +164,12 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 				return err
 			}
 		}
-		c.Send(CommandMessage{fmt.Sprintf("Sent to %v clients", len(dstList))})
+
+		if len(dstList) == 1 {
+			c.Send(CommandMessage{"Sent to 1 client"})
+		} else {
+			c.Send(CommandMessage{fmt.Sprintf("Sent to %v clients", len(dstList))})
+		}
 		return nil
 
 	// Disconnect
