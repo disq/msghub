@@ -35,7 +35,6 @@ func (s *Server) handleConn(conn net.Conn) {
 		reader: bufio.NewReader(conn),
 		writer: bufio.NewWriter(conn),
 	}
-	defer close(c.WriteCh)
 
 	s.sessMu.Lock()
 	s.sess[id] = c
@@ -44,11 +43,13 @@ func (s *Server) handleConn(conn net.Conn) {
 	// Listen for writes, write them to client
 	go s.ListenWriter(c)
 
+	// Show help text
 	s.SendHelp(c)
 
 	// Read client commands
-	s.ListenReader(c)
-	cancel()
+	go s.ListenReader(c)
+
+	<-c.ctx.Done()
 
 	// Disconnected, cleanup
 	s.logger.Printf("[%v] disconnected", id)
@@ -56,6 +57,9 @@ func (s *Server) handleConn(conn net.Conn) {
 	s.sessMu.Lock()
 	delete(s.sess, id)
 	s.sessMu.Unlock()
+
+	close(c.WriteCh)
+	c.conn.Close()
 }
 
 // ListenWriter listens on the client's write channel and forwards messages to client
@@ -78,7 +82,7 @@ func (s *Server) ListenReader(c *Session) {
 			return
 		default:
 			ln, err := c.reader.ReadString('\n')
-			if err != nil && err == io.EOF {
+			if err != nil && (err == io.EOF || isErrNetClosing(err)) {
 				return
 			} else if err != nil {
 				s.logger.Printf("[%v] Error reading: %v", c.ID, err)

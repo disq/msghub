@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/disq/msghub"
@@ -85,11 +86,16 @@ func (s *Server) Close() {
 	// Disconnect all clients
 	s.sessMu.RLock()
 	for _, c := range s.sess {
-		c.WriteCh <- "Server shutting down...\n" // FIXME does not work
-		c.cancel()
+		c.WriteCh <- "Server shutting down..." // FIXME does not work
 	}
 	s.sessMu.RUnlock()
 
 	s.cancel()
 	s.wg.Wait()
+}
+
+// isErrNetClosing checks if the error is ErrNetClosing (defined in stdlib internal/poll/fd.go)
+func isErrNetClosing(err error) bool {
+	// No other way to check
+	return strings.Contains(err.Error(), "use of closed network connection")
 }

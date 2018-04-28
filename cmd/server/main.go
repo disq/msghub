@@ -36,7 +36,7 @@ func main() {
 	}()
 
 	err := s.Listen(*addr)
-	if err != nil && err != context.Canceled {
+	if err != nil && err != context.Canceled && !isErrNetClosing(err) {
 		log.Print(err)
 	}
 
