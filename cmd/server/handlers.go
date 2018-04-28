@@ -26,7 +26,7 @@ func (s *Server) handleConn(conn net.Conn) {
 
 	c := &Session{
 		ID:      id,
-		WriteCh: make(chan string, chanBufferSize),
+		WriteCh: make(chan *Message, chanBufferSize),
 
 		conn:   conn,
 		ctx:    ctx,
@@ -68,8 +68,11 @@ func (s *Server) ListenWriter(c *Session) {
 		select {
 		case <-c.ctx.Done():
 			return
-		case w := <-c.WriteCh:
-			c.writer.WriteString(w + "\n")
+		case w, ok := <-c.WriteCh:
+			if !ok {
+				return // closed
+			}
+			c.writer.WriteString((*w).Read() + "\n")
 			c.writer.Flush()
 		}
 	}
@@ -91,7 +94,7 @@ func (s *Server) ListenReader(c *Session) {
 
 			if err := s.ParseHandleCommand(c, ln); err != nil {
 				s.logger.Printf("[%v] Error handling: %v", c.ID, err)
-				c.WriteCh <- fmt.Sprintf("Error in command: %v", err)
+				c.Send(CommandMessage{fmt.Sprintf("Error in command: %v", err)})
 			}
 
 		}
@@ -111,7 +114,7 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 
 	// Ask for id
 	case "a":
-		c.WriteCh <- fmt.Sprintf("%v", c.ID)
+		c.Send(CommandMessage{fmt.Sprintf("%v", c.ID)})
 		return nil
 
 	// Ask for clients
@@ -124,7 +127,7 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 			}
 			flist = append(flist, strconv.FormatUint(sessionId, 10))
 		}
-		c.WriteCh <- fmt.Sprintf("%v", strings.Join(flist, " "))
+		c.Send(CommandMessage{fmt.Sprintf("%v", strings.Join(flist, " "))})
 		return nil
 
 	// Broadcast message
@@ -141,18 +144,20 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 		if len(dstList) == 0 {
 			return fmt.Errorf("No clients specified")
 		}
+
+		msg := ClientMessage{c.ID, lnParts[2]}
 		for d := range dstList {
-			err = s.SendMessage(d, lnParts[2])
+			err = s.SendToSession(d, msg)
 			if err != nil {
 				return err
 			}
 		}
-		c.WriteCh <- fmt.Sprintf("Sent to %v clients", len(dstList))
+		c.Send(CommandMessage{fmt.Sprintf("Sent to %v clients", len(dstList))})
 		return nil
 
 	// Disconnect
 	case "d":
-		c.WriteCh <- "Disconnecting..."
+		c.Send(CommandMessage{"Disconnecting..."})
 		c.cancel()
 		return nil
 
@@ -177,7 +182,7 @@ func (s *Server) GetConnectedSessions() []uint64 {
 }
 
 func (s *Server) SendHelp(c *Session) {
-	c.WriteCh <- `
+	c.Send(CommandMessage{`
 Welcome! Commands:
 w  ask for clients
 s  broadcast message (example: s 1,2 message)
@@ -185,5 +190,27 @@ a  ask for id
 d  disconnect
 ?  this message
 ----
-`
+`})
+}
+
+func (c *Session) Send(msg Message) error {
+	select {
+	case <-c.ctx.Done():
+		return fmt.Errorf("Client %v not connected", c.ID)
+	case c.WriteCh <- &msg:
+	}
+
+	return nil
+}
+
+func (s *Server) SendToSession(id uint64, msg Message) error {
+	s.sessMu.RLock()
+	dst, ok := s.sess[id]
+	s.sessMu.RUnlock()
+
+	if !ok {
+		return fmt.Errorf("Client %v not connected", id)
+	}
+
+	return dst.Send(msg)
 }

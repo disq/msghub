@@ -28,7 +28,7 @@ type Server struct {
 // Session stores each sessions own data
 type Session struct {
 	ID      uint64
-	WriteCh chan string
+	WriteCh chan *Message
 
 	ctx    context.Context // Overkill?
 	cancel context.CancelFunc
@@ -86,7 +86,7 @@ func (s *Server) Close() {
 	// Disconnect all clients
 	s.sessMu.RLock()
 	for _, c := range s.sess {
-		c.WriteCh <- "Server shutting down..." // FIXME does not work
+		c.Send(SystemMessage{"Server shutting down..."}) // FIXME does not work
 	}
 	s.sessMu.RUnlock()
 

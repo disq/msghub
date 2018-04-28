@@ -35,26 +35,3 @@ func (s *Server) ValidateBroadcastDestinations(c *Session, input string) (map[ui
 
 	return dstList, nil
 }
-
-func (s *Server) SendMessage(id uint64, msg string) error {
-	s.sessMu.RLock()
-	dst, ok := s.sess[id]
-	s.sessMu.RUnlock()
-
-	if !ok {
-		return fmt.Errorf("Client %v not connected", id)
-	}
-
-	select {
-	case <-dst.ctx.Done():
-		return fmt.Errorf("Client %v not connected", id)
-	default:
-		select {
-		case <-s.ctx.Done():
-			return s.ctx.Err()
-		case dst.WriteCh <- msg:
-		}
-	}
-
-	return nil
-}
