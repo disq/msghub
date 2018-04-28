@@ -72,7 +72,7 @@ func (s *Server) ListenWriter(c *Session) {
 		case <-c.ctx.Done():
 			return
 		case w := <-c.WriteCh:
-			c.writer.WriteString(w)
+			c.writer.WriteString(w + "\n")
 			c.writer.Flush()
 		}
 	}
@@ -94,7 +94,7 @@ func (s *Server) ListenReader(c *Session) {
 
 			if err := s.ParseHandleCommand(c, ln); err != nil {
 				s.logger.Printf("[%v] Error handling: %v", c.ID, err)
-				c.WriteCh <- "Error in command\n"
+				c.WriteCh <- fmt.Sprintf("Error in command: %v", err)
 			}
 
 		}
@@ -114,7 +114,7 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 
 	// Ask for id
 	case "a":
-		c.WriteCh <- fmt.Sprintf("%v\n", c.ID)
+		c.WriteCh <- fmt.Sprintf("%v", c.ID)
 		return nil
 
 	// Ask for clients
@@ -127,7 +127,7 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 			}
 			flist = append(flist, strconv.FormatUint(sessionId, 10))
 		}
-		c.WriteCh <- fmt.Sprintf("%v\n", strings.Join(flist, " "))
+		c.WriteCh <- fmt.Sprintf("%v", strings.Join(flist, " "))
 		return nil
 
 	// Broadcast message
@@ -146,12 +146,12 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 				return err
 			}
 		}
-		c.WriteCh <- fmt.Sprintf("Sent to %v clients\n", len(dstList))
+		c.WriteCh <- fmt.Sprintf("Sent to %v clients", len(dstList))
 		return nil
 
 	// Disconnect
 	case "d":
-		c.WriteCh <- "Disconnecting...\n"
+		c.WriteCh <- "Disconnecting..."
 		c.cancel()
 		return nil
 	}
