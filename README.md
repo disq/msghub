@@ -1,3 +1,8 @@
+![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Tag](https://img.shields.io/github/tag/disq/msghub.svg)
+[![godoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/disq/msghub)
+[![Go Report](https://goreportcard.com/badge/github.com/disq/msghub)](https://goreportcard.com/report/github.com/disq/msghub)
+
 # PoC Chat Server
 
 This is a PoC chat server that will broadcast messages to other connected clients.
