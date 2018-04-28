@@ -102,3 +102,9 @@ func isErrNetClosing(err error) bool {
 	// No other way to check
 	return strings.Contains(err.Error(), "use of closed network connection")
 }
+
+// TimeoutError checks if the error is TimeoutError (defined in stdlib internal/poll/fd.go)
+func isTimeoutError(err error) bool {
+	// No other way to check
+	return strings.Contains(err.Error(), "i/o timeout")
+}

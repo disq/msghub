@@ -9,9 +9,13 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
-const chanBufferSize = 10
+const (
+	chanBufferSize = 10
+	readTimeout    = 5 * time.Second
+)
 
 // handleConn manages a connection's lifecycle
 func (s *Server) handleConn(conn net.Conn) {
@@ -81,9 +85,16 @@ func (s *Server) ListenReader(c *Session) {
 		case <-c.ctx.Done():
 			return
 		default:
+			// Set timeout before reading to detect disconnections
+			c.conn.SetReadDeadline(time.Now().Add(readTimeout))
+
 			ln, err := c.reader.ReadString('\n')
 			if err != nil && (err == io.EOF || isErrNetClosing(err)) {
+				c.cancel()
 				return
+			} else if err != nil && isTimeoutError(err) {
+				// deadline reached
+				continue
 			} else if err != nil {
 				s.logger.Printf("[%v] Error reading: %v", c.ID, err)
 				continue
