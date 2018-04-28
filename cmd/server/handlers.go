@@ -132,7 +132,21 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 
 	// Broadcast message
 	case "s":
-		// TODO(kh)
+		// Parse
+		dstList, err := s.ValidateBroadcastDestinations(c, lnParts[1])
+		if err != nil {
+			return err
+		}
+		if len(dstList) == 0 {
+			return fmt.Errorf("No clients specified")
+		}
+		for d, _ := range dstList {
+			err = s.SendMessage(d, lnParts[2])
+			if err != nil {
+				return err
+			}
+		}
+		c.WriteCh <- fmt.Sprintf("Sent to %v clients\n", len(dstList))
 		return nil
 
 	// Disconnect
