@@ -26,6 +26,7 @@ Connect with telnet. The welcome message on connection explains commands:
     s  broadcast message (example: s 1,2 message)
     a  ask for id
     d  disconnect
+    ?  this message
 
 ## Caveats
 

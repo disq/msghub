@@ -44,14 +44,7 @@ func (s *Server) handleConn(conn net.Conn) {
 	// Listen for writes, write them to client
 	go s.ListenWriter(c)
 
-	c.WriteCh <- `
-Welcome! Commands:
-w  ask for clients
-s  broadcast message (example: s 1,2 message)
-a  ask for id
-d  disconnect
-----
-`
+	s.SendHelp(c)
 
 	// Read client commands
 	s.ListenReader(c)
@@ -140,7 +133,7 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 		if len(dstList) == 0 {
 			return fmt.Errorf("No clients specified")
 		}
-		for d, _ := range dstList {
+		for d := range dstList {
 			err = s.SendMessage(d, lnParts[2])
 			if err != nil {
 				return err
@@ -153,6 +146,10 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 	case "d":
 		c.WriteCh <- "Disconnecting..."
 		c.cancel()
+		return nil
+
+	case "?":
+		s.SendHelp(c)
 		return nil
 	}
 
@@ -169,4 +166,16 @@ func (s *Server) GetConnectedSessions() []uint64 {
 	s.sessMu.RUnlock()
 
 	return ret
+}
+
+func (s *Server) SendHelp(c *Session) {
+	c.WriteCh <- `
+Welcome! Commands:
+w  ask for clients
+s  broadcast message (example: s 1,2 message)
+a  ask for id
+d  disconnect
+?  this message
+----
+`
 }
