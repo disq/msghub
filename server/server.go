@@ -16,7 +16,7 @@ type Server struct {
 	logger msghub.Logger
 
 	listener net.Listener
-	wg       sync.WaitGroup
+	wg       sync.WaitGroup // wg for client goroutines
 
 	sess   map[uint64]*Session
 	sessMu sync.RWMutex
@@ -81,15 +81,15 @@ func (s *Server) Listen(listenAddr string) error {
 }
 
 func (s *Server) close() {
-	// Disconnect all clients
+	// Disconnect all clients by sending them a shutdown message
 	s.sessMu.RLock()
 	for _, c := range s.sess {
-		c.Send(SystemMessage{"Server shutting down..."})
+		c.Send(ShutdownMessage{&SystemMessage{"Server shutting down..."}})
 	}
 	s.sessMu.RUnlock()
 
-	s.listener.Close()
-
-	s.cancel()
+	// Wait for all client goroutines to shut down
 	s.wg.Wait()
+
+	s.listener.Close()
 }

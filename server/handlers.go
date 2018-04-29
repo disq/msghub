@@ -78,6 +78,11 @@ func (s *Server) ListenWriter(c *Session) {
 	for w := range c.WriteCh {
 		c.writer.WriteString((*w).Read() + "\n")
 		c.writer.Flush()
+
+		// Shut down self
+		if _, ok := (*w).(ShutdownMessage); ok {
+			c.cancel()
+		}
 	}
 }
 

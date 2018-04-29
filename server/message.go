@@ -13,6 +13,11 @@ type SystemMessage struct {
 	contents string
 }
 
+// ShutdownMessage is a global system announcement after which the connection is terminated
+type ShutdownMessage struct {
+	*SystemMessage
+}
+
 // CommandMessage is a message response
 type CommandMessage struct {
 	contents string
