@@ -76,7 +76,7 @@ func (s *Server) Listen(listenAddr string) error {
 		}
 
 		// Never block
-		go s.handleConn(conn) // FIXME(kh): Worker pool?
+		go s.HandleConn(conn) // FIXME(kh): Worker pool?
 	}
 }
 

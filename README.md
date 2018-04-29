@@ -36,3 +36,9 @@ Connect with telnet. The welcome message on connection explains commands:
 ## Caveats
 
 Newline and space characters are used as delimiters. To send arbitrary byte-arrays, base-64 encoding is recommended.
+
+## Tests
+
+To run the unit tests:
+
+    go test -race -v ./...

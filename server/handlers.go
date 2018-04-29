@@ -19,8 +19,8 @@ const (
 	readTimeout    = 5 * time.Second
 )
 
-// handleConn manages a connection's lifecycle
-func (s *Server) handleConn(conn net.Conn) {
+// HandleConn manages a connection's lifecycle
+func (s *Server) HandleConn(conn net.Conn) {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
