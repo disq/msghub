@@ -106,8 +106,6 @@ func (c *client) ReadFlush() error {
 		}
 		//c.Printf("Read: %q", ln)
 	}
-
-	return nil
 }
 
 // Expect reads a single line (for clientReadTimeout) and compares it with want

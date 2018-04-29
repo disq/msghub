@@ -132,6 +132,8 @@ func (s *Server) ParseHandleCommand(c *Session, ln string) error {
 	// Ask for clients
 	case "w":
 		list := s.GetConnectedSessions()
+		Uint64Slice(list).Sort() // Always respond with ascending order of uint64s
+
 		var flist []string
 		for _, sessionId := range list {
 			if sessionId == c.ID {
