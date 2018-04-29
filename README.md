@@ -9,17 +9,17 @@ This is a PoC chat server that will broadcast messages to other connected client
 
 ## Build
 
-    go build ./cmd/server
+    go build ./cmd/msghub
 
 ## Running
 
 Just do:
 
-    ./server
+    ./msghub
 
 ## Options
 
-    Usage of ./server:
+    Usage of ./msghub:
       -addr string
             Listen on address (default ":49152")
 

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bufio"
@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/disq/msghub"
 )
 
 const (
@@ -90,10 +92,10 @@ func (s *Server) ListenReader(c *Session) {
 			c.conn.SetReadDeadline(time.Now().Add(readTimeout))
 
 			ln, err := c.reader.ReadString('\n')
-			if err != nil && (err == io.EOF || isErrNetClosing(err)) {
+			if err != nil && (err == io.EOF || msghub.IsErrNetClosing(err)) {
 				c.cancel()
 				return
-			} else if err != nil && isTimeoutError(err) {
+			} else if err != nil && msghub.IsTimeoutError(err) {
 				// deadline reached
 				continue
 			} else if err != nil {

@@ -1,10 +1,9 @@
-package main
+package server
 
 import (
 	"bufio"
 	"context"
 	"net"
-	"strings"
 	"sync"
 
 	"github.com/disq/msghub"
@@ -39,8 +38,8 @@ type Session struct {
 	writer *bufio.Writer
 }
 
-// NewServer creates a new Server instance
-func NewServer(ctx context.Context, logger msghub.Logger) *Server {
+// New creates a new Server instance
+func New(ctx context.Context, logger msghub.Logger) *Server {
 
 	// Create a new context so that we can shut down goroutines without requiring the parent context to be cancelled
 	ctx, cancel := context.WithCancel(ctx)
@@ -93,16 +92,4 @@ func (s *Server) close() {
 
 	s.cancel()
 	s.wg.Wait()
-}
-
-// isErrNetClosing checks if the error is ErrNetClosing (defined in stdlib internal/poll/fd.go)
-func isErrNetClosing(err error) bool {
-	// No other way to check
-	return strings.Contains(err.Error(), "use of closed network connection")
-}
-
-// TimeoutError checks if the error is TimeoutError (defined in stdlib internal/poll/fd.go)
-func isTimeoutError(err error) bool {
-	// No other way to check
-	return strings.Contains(err.Error(), "i/o timeout")
 }

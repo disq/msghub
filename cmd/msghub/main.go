@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/disq/msghub"
+	"github.com/disq/msghub/server"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 	defer cancelFunc()
 
 	logger := log.New(os.Stderr, "", log.LstdFlags|log.LUTC)
-	s := NewServer(ctx, logger)
+	s := server.New(ctx, logger)
 
 	go func() {
 		ch := make(chan os.Signal, 1)
@@ -31,7 +32,7 @@ func main() {
 	}()
 
 	err := s.Listen(*addr)
-	if err != nil && err != context.Canceled && !isErrNetClosing(err) {
+	if err != nil && err != context.Canceled && !msghub.IsErrNetClosing(err) {
 		log.Print(err)
 	}
 }
