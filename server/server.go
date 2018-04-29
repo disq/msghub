@@ -61,7 +61,7 @@ func (s *Server) Listen(listenAddr string) error {
 	}
 	s.listener = listener
 
-	s.logger.Printf("Listening on %v", listenAddr)
+	s.logger.Printf("Listening on %v", listener.Addr())
 
 	go func() {
 		<-s.ctx.Done()
@@ -81,14 +81,14 @@ func (s *Server) Listen(listenAddr string) error {
 }
 
 func (s *Server) close() {
-	s.listener.Close()
-
 	// Disconnect all clients
 	s.sessMu.RLock()
 	for _, c := range s.sess {
 		c.Send(SystemMessage{"Server shutting down..."})
 	}
 	s.sessMu.RUnlock()
+
+	s.listener.Close()
 
 	s.cancel()
 	s.wg.Wait()

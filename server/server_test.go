@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 	"time"
-
-	"sync"
 
 	"github.com/disq/msghub"
 	"github.com/disq/msghub/server"
